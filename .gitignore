@@ -1,0 +1,23 @@
+# dependências e segredos
+node_modules/
+.env
+.env.*
+!.env.example
+
+# banco de dados e backups
+*.db
+*.db-shm
+*.db-wal
+backups/
+
+# resultados de testes
+test-results/
+playwright-report/
+coverage/
+
+# sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json

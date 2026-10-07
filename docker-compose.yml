@@ -1,0 +1,17 @@
+services:
+  soc:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - backend/.env
+    environment:
+      NODE_ENV: production
+      DB_PATH: /data/soc.db
+      BACKUP_DIR: /data/backups
+    volumes:
+      - soc-data:/data
+    restart: unless-stopped
+
+volumes:
+  soc-data:

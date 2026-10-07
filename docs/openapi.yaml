@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info:
+  title: Mini SOC API
+  version: 1.0.0
+  description: Detecção de ataques em tempo real. Cole este arquivo em https://editor.swagger.io para navegar.
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+    apiKey: { type: apiKey, in: header, name: x-api-key }
+  schemas:
+    Event:
+      type: object
+      required: [ip, type]
+      properties:
+        ip: { type: string, example: 203.0.113.50 }
+        type: { type: string, enum: [login, port_access] }
+        username: { type: string }
+        success: { type: boolean }
+        port: { type: integer, minimum: 1, maximum: 65535 }
+    Error:
+      type: object
+      properties: { error: { type: string } }
+security:
+  - bearer: []
+paths:
+  /api/health:
+    get: { summary: Verificação de saúde, security: [] , responses: { '200': { description: ok } } }
+  /api/logs:
+    post:
+      summary: Envia um evento para análise
+      security: [{ apiKey: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Event' } } } }
+      responses: { '201': { description: Evento gravado }, '202': { description: IP bloqueado, evento descartado }, '400': { description: Dados inválidos }, '401': { description: Chave recusada } }
+  /api/auth/login:
+    post:
+      summary: Login (10 tentativas por minuto)
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { type: object, properties: { username: { type: string }, password: { type: string } } } } } }
+      responses: { '200': { description: Token JWT e usuário }, '401': { description: Credenciais incorretas } }
+  /api/auth/me:
+    get: { summary: Usuário atual, responses: { '200': { description: ok } } }
+  /api/alerts:
+    get: { summary: Lista alertas com histórico, parameters: [{ name: limit, in: query, schema: { type: integer, maximum: 200 } }], responses: { '200': { description: ok } } }
+  /api/alerts/{id}:
+    patch:
+      summary: Fluxo de investigação
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { action: { type: string, enum: [investigate, resolve, note] }, text: { type: string, maxLength: 140 } } } } } }
+      responses: { '200': { description: Alerta atualizado }, '404': { description: Não encontrado } }
+  /api/blocks:
+    get: { summary: IPs bloqueados, responses: { '200': { description: ok } } }
+    post: { summary: Bloqueia um IP (administrador), responses: { '201': { description: Bloqueado }, '409': { description: IP na lista de exceções } } }
+  /api/blocks/{ip}:
+    delete: { summary: Desbloqueia um IP (administrador), parameters: [{ name: ip, in: path, required: true, schema: { type: string } }], responses: { '204': { description: Desbloqueado } } }
+  /api/ips/{ip}:
+    get: { summary: Ficha do IP (totais, eventos, alertas, bloqueio e reputação), parameters: [{ name: ip, in: path, required: true, schema: { type: string } }], responses: { '200': { description: ok } } }
+  /api/rules:
+    get: { summary: Regras de detecção, responses: { '200': { description: ok } } }
+    put: { summary: Altera as regras (administrador), responses: { '200': { description: ok } } }
+  /api/settings:
+    get: { summary: Resposta automática, lista de exceções e canais configurados, responses: { '200': { description: ok } } }
+    put: { summary: Altera a resposta automática (administrador), responses: { '200': { description: ok } } }
+  /api/users:
+    get: { summary: Lista usuários (administrador), responses: { '200': { description: ok } } }
+    post: { summary: Cria usuário (administrador), responses: { '201': { description: Criado }, '409': { description: Já existe } } }
+  /api/users/{username}:
+    patch: { summary: Redefine a senha e derruba as sessões do usuário (administrador), parameters: [{ name: username, in: path, required: true, schema: { type: string } }], responses: { '200': { description: ok } } }
+    delete: { summary: Remove usuário (administrador), parameters: [{ name: username, in: path, required: true, schema: { type: string } }], responses: { '204': { description: Removido } } }
+  /api/audit:
+    get: { summary: Trilha de auditoria (administrador), responses: { '200': { description: ok } } }
+  /api/simulate:
+    post: { summary: Gera um ataque de teste (só com SIMULATE=true), responses: { '202': { description: Iniciado }, '404': { description: Simulação desligada } } }
+  /api/auth/refresh:
+    post: { summary: Renova o token de login, responses: { '200': { description: Novo token } } }
+  /api/auth/logout-all:
+    post: { summary: Encerra todas as sessões da conta (derruba os tokens em todos os dispositivos), responses: { '200': { description: ok } } }
+  /api/auth/password:
+    post: { summary: Troca a própria senha (10 a 128 caracteres) e derruba as outras sessões, responses: { '200': { description: ok }, '401': { description: Senha atual incorreta } } }
+  /api/users/{username}/unlock:
+    post: { summary: Destrava uma conta bloqueada por tentativas seguidas (administrador), parameters: [{ name: username, in: path, required: true, schema: { type: string } }], responses: { '200': { description: ok } } }
+  /api/keys:
+    get: { summary: Lista as chaves de API por fonte (administrador), responses: { '200': { description: ok } } }
+    post: { summary: Cria uma chave por fonte de logs. A chave completa só aparece nesta resposta (administrador), responses: { '201': { description: Criada } } }
+  /api/keys/{id}:
+    delete: { summary: Revoga uma chave (administrador), parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '204': { description: Revogada } } }
+  /metrics:
+    get: { summary: Métricas no formato Prometheus (só existe com METRICS_TOKEN, enviado como Bearer), responses: { '200': { description: ok }, '404': { description: Desligado } } }

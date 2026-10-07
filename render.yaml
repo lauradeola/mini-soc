@@ -1,0 +1,18 @@
+# Publicação no Render (Blueprint). Sem disco, o banco recomeça a cada novo deploy: serve para demonstração.
+services:
+  - type: web
+    name: mini-soc
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: SIMULATE
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: API_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ANALYST_PASSWORD
+        sync: false

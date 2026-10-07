@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini SOC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<div class="app" id="app">
+<aside class="side">
+  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg><div>Mini SOC</div></div>
+  <nav class="nav" aria-label="Seções">
+    <button data-v="overview" class="on">Visão geral</button>
+    <button data-v="alerts">Alertas <span class="nb" id="nbA"></span></button>
+    <button data-v="incidents">Incidentes</button>
+    <button data-v="events">Eventos</button>
+    <button data-v="blocks">Bloqueios <span class="nb" id="nbB"></span></button>
+    <button data-v="rules">Regras</button>
+    <button data-v="audit" class="admin-only">Auditoria</button>
+    <button data-v="users" class="admin-only">Usuários</button>
+    <button data-v="keys" class="admin-only">Fontes de logs</button>
+  </nav>
+  <div class="sf"><span id="live">Simulação em andamento</span><button id="bPause">Pausar simulação</button><button id="bTheme">Alternar tema</button><span id="who" hidden></span><button id="bOut" hidden>Sair</button><button id="bOutAll" hidden>Encerrar todas as sessões</button><button id="bPwd" hidden>Trocar minha senha</button><span>Atalhos: 1 a 9 trocam de tela, / busca</span></div>
+</aside>
+
+<main id="main" tabindex="-1">
+  <div class="bar">
+    <div><h1 id="ttl">Visão geral</h1><div class="sub" id="sub"></div></div>
+    <div class="ctl"><span class="clk" id="clock"></span><span class="sim">Simular:</span><button class="btn" id="bBrute">Força bruta</button><button class="btn" id="bScan">Varredura de portas</button><button class="btn" id="bStuff">Credential stuffing</button><button class="btn" id="bComp">Acesso comprometido</button><button class="btn" id="bPrint">Imprimir</button></div>
+  </div>
+
+  <section id="v-overview">
+    <div class="p kp">
+      <div><span>Eventos no último minuto</span><b id="kEv">0</b><span class="mu" id="hEv"></span></div>
+      <div><span>Falhas de login</span><b id="kFail">0</b><span class="mu" id="hFail"></span></div>
+      <div><span>Alertas abertos</span><b id="kOpen">0</b><span class="mu" id="hOpen"></span></div>
+      <div><span>Maior gravidade aberta</span><b id="kSev">Nenhuma</b><span class="mu">entre os alertas abertos</span></div>
+    </div>
+    <div class="g2">
+      <div class="p"><div class="ph"><h2>Eventos por segundo</h2><small>últimos 60 segundos</small></div>
+        <div class="pb"><svg class="ch" id="chart" viewBox="0 0 720 220" role="img" aria-label="Eventos por segundo, com marcas nos momentos dos alertas"></svg>
+        <div class="lgd"><span><i style="background:var(--accent)"></i>Todos os eventos</span><span><i style="background:var(--high)"></i>Logins que falharam</span><span><i style="background:var(--crit);height:8px;width:2px"></i>Momento de um alerta</span></div></div></div>
+      <div class="col">
+        <div class="p"><div class="ph"><h2>Alertas por gravidade</h2></div><div class="pb"><div class="sv" id="sv"></div><div class="sl" id="sl"></div></div></div>
+        <div class="p"><div class="ph"><h2>IPs mais suspeitos</h2><small>risco de 0 a 100</small></div><div class="pb"><ul class="ips" id="ips"></ul></div></div>
+      </div>
+    </div>
+    <div class="p"><div class="ph"><h2>Alertas recentes</h2><button class="btn" data-v="alerts">Ver todos</button></div>
+      <div class="tr th"><span>Gravidade</span><span>Regra</span><span>IP de origem</span><span>Detalhe</span><span>Detectado</span><span>Status</span></div><div id="recent"></div></div>
+  </section>
+
+  <section id="v-alerts" hidden>
+    <div class="p"><div class="tb"><input type="search" id="q" placeholder="Buscar por IP" aria-label="Buscar por IP">
+      <select id="fs" aria-label="Gravidade"><option value="all">Todas as gravidades</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Média</option></select>
+      <select id="ft" aria-label="Status"><option value="all">Todos os status</option><option value="o">Abertos</option><option value="r">Resolvidos</option><option value="i">Em investigação</option><option value="b">Bloqueados</option></select><select id="fp" aria-label="Período"><option value="all">Qualquer período</option><option value="15">Últimos 15 min</option><option value="60">Última hora</option><option value="1440">Últimas 24 horas</option></select><button class="btn" id="bCsv">Exportar CSV</button></div>
+      <div class="tr th"><button class="thb" data-sort="sev">Gravidade</button><button class="thb" data-sort="type">Regra</button><button class="thb" data-sort="ip">IP de origem</button><span>Detalhe</span><button class="thb" data-sort="ts" data-dir="-1">Detectado</button><button class="thb" data-sort="st">Status</button></div><div id="alerts"></div></div>
+  </section>
+
+  <section id="v-events" hidden>
+    <div class="p"><div class="tb"><select id="fe" aria-label="Tipo de evento"><option value="all">Todos os eventos</option><option value="ok">Logins com sucesso</option><option value="fail">Logins que falharam</option><option value="port">Acessos a portas</option></select><span class="mu" style="align-self:center">Mostrando os 60 mais recentes</span></div><div class="lg" id="log"></div></div>
+  </section>
+
+  <section id="v-blocks" hidden>
+    <div class="p"><div class="tr k th"><span>IP</span><span>Bloqueado</span><span>Motivo</span><span>Alertas</span><span>Expira</span><span></span></div><div id="blocks"></div></div>
+  </section>
+
+  <section id="v-rules" hidden>
+    <div class="p"><div class="ph"><h2>Regras ativas</h2><small>as mudanças valem para os próximos eventos</small></div><div id="rules"></div></div>
+    <div class="p" id="np"></div>
+    <div class="p" id="auto"></div>
+  </section>
+
+  <section id="v-incidents" hidden>
+    <div class="p"><div class="tr inc-h th"><span>Gravidade</span><span>IP de origem</span><span>Resumo</span><span>Última</span><span>Status</span></div><div id="incl"></div></div>
+  </section>
+
+  <section id="v-keys" hidden>
+    <div class="p" id="keysl"></div>
+  </section>
+
+  <section id="v-audit" hidden>
+    <div class="p"><div class="tr a th"><span>Horário</span><span>Ação</span></div><div id="auditl"></div></div>
+  </section>
+
+  <section id="v-users" hidden>
+    <div class="p" id="users"></div>
+  </section>
+
+  <p class="foot">Tudo aqui roda no navegador com tráfego fictício. No projeto completo, os eventos chegam pela API Express, os detectores rodam no servidor e os alertas chegam a esta tela por WebSocket.</p>
+</main>
+</div>
+
+<div class="gate" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="lgT">
+  <div class="gate-box">
+    <h2 id="lgT">Entrar no Mini SOC</h2>
+    <p class="mu" style="margin:0">Use o usuário e a senha criados no servidor.</p>
+    <label>Usuário<input id="lu" autocomplete="username" maxlength="64"></label>
+    <label>Senha<input id="lp" type="password" autocomplete="current-password" maxlength="128"></label>
+    <div id="le" role="alert"></div>
+    <button class="btn p" id="lb">Entrar</button>
+  </div>
+</div>
+<div class="gate" id="ipd" hidden role="dialog" aria-modal="true" aria-labelledby="ipT"><div class="gate-box wide" id="ipc"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="js/app.js"></script>
+</body>
+</html>
