@@ -23,7 +23,7 @@
     "ws": "^8.18.0"
   },
   "optionalDependencies": {
-    "maxmind": "^4.3.22"
+    "maxmind": "^5.0.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.4",
